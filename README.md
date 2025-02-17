@@ -28,7 +28,7 @@ LocalResourceHub is a full-stack application designed for managing local resourc
 
 ## Show
 
-<video controls src="docs/display.mp4" title="Title"></video>
+![display](docs/display.gif)
 
 ## License
 

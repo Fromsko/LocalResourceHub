@@ -31,7 +31,7 @@ LocalResourceHub 是一个用于管理本地资源的全栈应用程序。它提
 
 ## 演示
 
-<video controls src="docs/display.mp4" title="演示"></video>
+[<video controls src="docs/display.mp4" title="演示"></video>](README.zh.md) ![<video controls src="docs/display.mp4" title="演示"></video>](docs/display.gif)
 
 ## 开源协议
 
