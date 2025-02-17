@@ -1,25 +1,39 @@
-# README
+# LocalResourceHub
 
-## About
+## Introduction
 
-> wails tailwindcss + ts + vue
+LocalResourceHub is a full-stack application designed for managing local resources. It provides a user-friendly interface and robust backend support, suitable for personal and small team resource management.
 
-## Using
+---
 
-```shell
-wails init -n MyProject -t https://github.com/Fromsko/wails-template
-```
+## Features
+- Resource upload and management
+- File categorization and search
+- User authentication
+- Responsive design, compatible with various devices
+
+---
+
+## Installation and Running
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/fromsko/LocalResourceHub.git
+   ```
+2. Start:
+   ```bash
+   cd LocalResourceHub
+   wails dev
+   ```
 
 ## Show
 
-![Show-Gif](./docs/show.gif)
+<video controls src="docs/display.mp4" title="Title"></video>
 
-## Live Development
+## License
 
-To run in live development mode, run `wails dev` in the project directory. In another terminal, go into the `frontend`
-directory and run `npm run dev`. The frontend dev server will run on http://localhost:34115. Connect to this in your
-browser and connect to your application.
+This project is licensed under the [GPL-2.0](https://www.gnu.org/licenses/gpl-2.0.html) license.
 
-## Building
+---
 
-To build a redistributable, production mode package, use `wails build`.
+For Chinese documentation, see [README.zh.md](README.zh.md).
