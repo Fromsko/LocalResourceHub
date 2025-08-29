@@ -18,7 +18,7 @@ type UploadService struct {
 func NewUploadService(repo model.FileRepository) model.Uploader {
 	return &UploadService{
 		repo:        repo,
-		MaxFileSize: 1024 * 1024 * 1024, // 1GB
+		MaxFileSize: 20 * 1024 * 1024 * 1024, // 20GB
 		AllowedFileTypes: map[string]bool{
 			"application/pdf":    true,
 			"application/msword": true, // .doc
@@ -107,14 +107,21 @@ func (s *UploadService) UploadFile(ctx *fiber.Ctx) error {
 }
 
 func (s *UploadService) GetFile(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	file, err := s.repo.FindByHash(id)
-	if err != nil || file == nil {
-		return utils.JsonErrorResp(ctx, model.ERROR_NOT_FOUND)
-	}
+    id := ctx.Params("id")
+    file, err := s.repo.FindByHash(id)
+    if err != nil || file == nil {
+        return utils.JsonErrorResp(ctx, model.ERROR_NOT_FOUND)
+    }
 
-	ctx.Set("Content-Type", file.ContentType)
-	return ctx.Send(file.Data)
+    // 设置 MIME 类型
+    ctx.Set("Content-Type", file.ContentType)
+
+    // 设置下载时的文件名（支持中文文件名）
+    disposition := fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+        utils.EncodeRFC5987(file.FileName), utils.EncodeRFC5987(file.FileName))
+    ctx.Set("Content-Disposition", disposition)
+
+    return ctx.Send(file.Data)
 }
 
 func (s *UploadService) DeleteFile(ctx *fiber.Ctx) error {

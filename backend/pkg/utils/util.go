@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -95,6 +96,11 @@ func Paginate(total, limit, page int) map[string]int {
 		"page":   page,
 		"offset": (page - 1) * limit,
 	}
+}
+
+// EncodeRFC5987 对文件名进行 RFC 5987 编码 (UTF-8)
+func EncodeRFC5987(s string) string {
+    return url.PathEscape(s)
 }
 
 // 获取环境变量
