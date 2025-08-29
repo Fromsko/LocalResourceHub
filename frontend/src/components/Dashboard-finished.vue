@@ -1,96 +1,111 @@
 <script setup lang="ts">
-import { Quit, WindowMinimise } from '../../wailsjs/runtime/runtime'
-import { ref, watch } from 'vue'
+import axios from "axios"
+import { onMounted, ref } from "vue"
+import { Quit, WindowMinimise } from "../../wailsjs/runtime/runtime"
+import FileModal from "./FileModal.vue"
 
-const theme = ref(localStorage.getItem('color-theme') || 'light')
+// ========== 侧边栏状态 ==========
 const isSidebarOpen = ref(true)
-
-watch(theme, (newTheme: string) => {
-  if (newTheme === 'dark') {
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('color-theme', 'dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.setItem('color-theme', 'light')
-  }
-})
-
-if (theme.value === 'dark') {
-  document.documentElement.classList.add('dark')
-} else {
-  document.documentElement.classList.remove('dark')
-}
-
-const toggleTheme = () => {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
-}
-
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
+}
+
+// ========== 文件数据 ==========
+interface FileItem {
+  ID: number
+  file_name: string
+  file_size: number
+  hash: string
+  CreatedAt: string
+}
+
+const files = ref<FileItem[]>([])
+const selectedFile = ref<FileItem | null>(null)
+const isModalVisible = ref(false)
+
+const fetchFiles = async () => {
+  try {
+    const response = await axios.get("http://127.0.0.1:3670/api/v1/files")
+    files.value = response.data.data.files
+  } catch (error) {
+    console.error("Failed to fetch files:", error)
+  }
+}
+
+onMounted(() => {
+  fetchFiles()
+})
+
+const formatFileSize = (size: number): string => {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
+  if (size < 1024 * 1024 * 1024)
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`
+  return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleString()
+}
+
+const openModal = (file: FileItem) => {
+  selectedFile.value = file
+  isModalVisible.value = true
+}
+
+const closeModal = () => {
+  isModalVisible.value = false
+  selectedFile.value = null
+}
+
+const deleteFile = async () => {
+  if (selectedFile.value) {
+    try {
+      const currentFile = selectedFile.value
+      await axios.delete(
+        `http://127.0.0.1:3670/api/v1/upload/${currentFile.hash}`
+      )
+      files.value = files.value.filter((f) => f.hash !== currentFile.hash)
+      closeModal()
+      fetchFiles()
+    } catch (error) {
+      console.error("Failed to delete file:", error)
+    }
+  }
 }
 </script>
 
 <template>
-  <div class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white antialiased font-sans">
+  <div class="bg-gray-100 text-gray-800 font-sans select-none">
     <div class="flex flex-col h-screen">
       <!-- 顶部导航栏 -->
-      <header
-        class="bg-white dark:bg-gray-800 shadow dark:border-b dark:border-gray-700"
-        style="--wails-draggable: drag"
-      >
+      <header class="bg-white shadow border-b" style="--wails-draggable: drag">
         <div class="flex items-center justify-between px-6 py-4">
           <div class="flex items-center">
             <!-- 移动端菜单按钮 -->
             <button
               id="menu-toggle"
-              class="text-gray-500 dark:text-gray-200 hover:text-gray-600 dark:hover:text-gray-100 focus:outline-none focus:text-gray-600 dark:focus:text-gray-100"
+              class="text-gray-600 hover:text-gray-800"
               @click="toggleSidebar"
             >
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
-            <h2 class="text-xl font-semibold ml-2 lg:ml-0">仪表盘</h2>
+            <h2 class="text-xl font-semibold ml-2 lg:ml-0">文件管理</h2>
           </div>
           <div class="flex items-center">
-            <!-- 主题切换 -->
-            <div class="flex items-center space-x-4">
-              <button
-                id="theme-toggle"
-                class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 mr-2"
-                @click="toggleTheme"
-              >
-                <!-- 亮色图标 -->
-                <svg
-                  id="theme-toggle-dark-icon"
-                  class="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  :class="{ hidden: theme === 'dark' }"
-                >
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                </svg>
-                <!-- 暗色图标 -->
-                <svg
-                  id="theme-toggle-light-icon"
-                  class="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  :class="{ hidden: theme === 'light' }"
-                >
-                  <path
-                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-              </button>
-            </div>
-
-            <span class="mr-2 select-none">管理员</span>
-            <!-- <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md">登出</button> -->
             <button class="btn-min" @click="WindowMinimise">-</button>
             <button class="btn-close" @click="Quit">x</button>
           </div>
@@ -99,76 +114,80 @@ const toggleSidebar = () => {
 
       <div class="flex-1 flex overflow-hidden">
         <!-- 侧边栏 -->
-        <aside
-          v-show="isSidebarOpen"
-          id="sidebar"
-          class="bg-white dark:bg-gray-900 dark:text-white w-48 flex-shrink-0 lg:block transition-transform transform lg:translate-x-0"
-        >
-          <div class="p-4 border-y dark:border-gray-700 dark:bg-gray-900 select-none">
-            <img src="https://one-hub.xiao5.info/assets/logo-llWtC-Rj.svg" class="h-12 w-full" alt="Logo" />
-          </div>
-          <nav class="mt-4 space-y-1">
-            <a href="#" class="side-item">仪表盘</a>
-            <a href="#" class="side-item">用户管理</a>
-            <a href="#" class="side-item">内容管理</a>
-            <a href="#" class="side-item">设置</a>
-          </nav>
-        </aside>
+        <transition name="slide">
+          <aside
+            v-show="isSidebarOpen"
+            id="sidebar"
+            class="bg-white text-gray-800 w-36 flex-shrink-0 lg:block border-r"
+          >
+            <nav class="mt-4 space-y-1">
+              <!-- 主页：本地路由 -->
+              <RouterLink
+                to="/"
+                class="side-item"
+                active-class="font-bold text-blue-600"
+              >
+                主页
+              </RouterLink>
 
-        <!-- 主要内容区域 -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 dark:bg-gray-800 p-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-              <h3 class="text-lg font-semibold mb-2">总用户</h3>
-              <p class="text-3xl font-bold">1,234</p>
-            </div>
-            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-              <h3 class="text-lg font-semibold mb-2">今日活跃</h3>
-              <p class="text-3xl font-bold">256</p>
-            </div>
-            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-              <h3 class="text-lg font-semibold mb-2">总收入</h3>
-              <p class="text-3xl font-bold">¥9,876</p>
-            </div>
-            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-              <h3 class="text-lg font-semibold mb-2">待处理订单</h3>
-              <p class="text-3xl font-bold">23</p>
+              <!-- 项目：外部链接，跳转到 GitHub 并新窗口打开 -->
+              <a
+                href="https://github.com/fromsko"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="side-item"
+              >
+                项目
+              </a>
+            </nav>
+          </aside>
+        </transition>
+
+        <!-- 主要内容 -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6">
+          <!-- 文件数量 -->
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
+          >
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-lg font-semibold mb-2">文件总数</h3>
+              <p class="text-3xl font-bold">{{ files.length }}</p>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
-            <h3 class="text-xl font-semibold mb-4">最近活动</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full">
-                <thead>
-                  <tr class="bg-gray-100 dark:bg-gray-800">
-                    <th class="text-left py-2 px-4">用户</th>
-                    <th class="text-left py-2 px-4">活动</th>
-                    <th class="text-left py-2 px-4">时间</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="border-b dark:border-gray-600">
-                    <td class="py-2 px-4">张三</td>
-                    <td class="py-2 px-4">登录</td>
-                    <td class="py-2 px-4">2023-06-10 14:30</td>
-                  </tr>
-                  <tr class="border-b dark:border-gray-600">
-                    <td class="py-2 px-4">李四</td>
-                    <td class="py-2 px-4">更新个人信息</td>
-                    <td class="py-2 px-4">2023-06-10 13:45</td>
-                  </tr>
-                  <tr>
-                    <td class="py-2 px-4">王五</td>
-                    <td class="py-2 px-4">提交订单</td>
-                    <td class="py-2 px-4">2023-06-10 12:20</td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- 上传日志 -->
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold mb-4">上传日志</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                v-for="file in files"
+                :key="file.ID"
+                class="bg-white rounded-lg shadow-md p-4 transition-transform duration-200 hover:scale-105 cursor-pointer"
+                @click="openModal(file)"
+              >
+                <h3 class="text-lg font-semibold text-gray-800 truncate">
+                  {{ file.file_name }}
+                </h3>
+                <p class="text-sm text-gray-500 mt-2">
+                  {{ formatFileSize(file.file_size) }}
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ formatDate(file.CreatedAt) }}
+                </p>
+              </div>
             </div>
           </div>
         </main>
       </div>
     </div>
+
+    <!-- 文件详情弹窗 -->
+    <FileModal
+      v-if="isModalVisible"
+      :file="selectedFile"
+      :visible="isModalVisible"
+      @close="closeModal"
+      @delete="deleteFile"
+    />
   </div>
 </template>
