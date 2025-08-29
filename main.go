@@ -69,7 +69,7 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		Bind: []interface{}{
+		Bind: []any{
 			app,
 		},
 	})

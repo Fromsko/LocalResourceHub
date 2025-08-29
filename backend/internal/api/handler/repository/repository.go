@@ -22,9 +22,9 @@ func (r *GormFileRepository) Create(file *model.File) error {
 	return r.db.Create(file).Error
 }
 
-// Delete 删除文件记录
+// Delete 删除文件记录(硬删除)
 func (r *GormFileRepository) Delete(id uint) error {
-	return r.db.Delete(&model.File{}, id).Error
+	return r.db.Unscoped().Delete(&model.File{}, id).Error
 }
 
 // FindByID 根据ID查找文件
